@@ -54,7 +54,7 @@ const defaults = initialPapers();
 
 const publishedCssciPaper = {
   id: "paper-cssci-risk-contagion",
-  status: "CSSCI",
+  status: "PUBLISHED",
   year: "2026",
   titleZh: "同群企业风险传染对货币政策风险承担渠道的影响研究",
   titleEn: "The Influence of Risk Contagion of the Same Group Enterprises on the Risk-Taking Channels of Monetary Policy",
