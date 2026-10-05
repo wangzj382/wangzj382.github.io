@@ -62,24 +62,57 @@ const publishedCssciPaper = {
   descriptionEn: "Economy and Management · CSSCI · Vol. 40, No. 3, pp. 68–76"
 };
 
+const bankFintechPaper = {
+  id: "paper-bank-fintech-transmission",
+  status: "SECOND REVIEW",
+  year: "2026",
+  titleZh: "银行金融科技与货币政策精准信贷传导",
+  titleEn: "Bank Fintech and the Precision of Monetary Policy Credit Transmission",
+  descriptionZh: "《山西财经大学学报》· CSSCI · 二审",
+  descriptionEn: "Journal of Shanxi University of Finance and Economics · CSSCI · second-round review"
+};
+
+const innovationQualityPaper = {
+  id: "paper-llm-innovation-quality",
+  status: "FIRST REVIEW",
+  year: "2026",
+  titleZh: "基于大语言模型的企业创新质量测度及其绩效预测价值研究",
+  titleEn: "The Measurement of Enterprise Innovation Quality Based on Large Language Models and Its Predictive Value for Performance",
+  descriptionZh: "《南开管理评论》· CSSCI · 一审",
+  descriptionEn: "Nankai Business Review · CSSCI · first-round review"
+};
+
+const managedPapers = [bankFintechPaper, innovationQualityPaper, publishedCssciPaper];
+
 function migratePapers(saved) {
-  const exactMatch = saved.findIndex(paper =>
-    paper.id === publishedCssciPaper.id ||
-    paper.titleEn === publishedCssciPaper.titleEn ||
-    paper.titleZh === publishedCssciPaper.titleZh
+  let migrated = saved.filter(paper =>
+    paper.titleEn !== "Chinese C-journal manuscript" && paper.titleZh !== "中文C刊稿件"
   );
-  if (exactMatch >= 0) {
-    return saved.map((paper, index) => index === exactMatch ? publishedCssciPaper : paper);
-  }
 
-  const placeholder = saved.findIndex(paper =>
-    paper.titleEn === "Chinese C-journal manuscript" || paper.titleZh === "中文C刊稿件"
+  const firstTierPlaceholder = migrated.findIndex(paper =>
+    paper.titleEn === "Chinese first-tier journal manuscript" || paper.titleZh === "中文一类期刊稿件"
   );
-  if (placeholder >= 0) {
-    return saved.map((paper, index) => index === placeholder ? publishedCssciPaper : paper);
-  }
+  if (firstTierPlaceholder >= 0) migrated.splice(firstTierPlaceholder, 1, innovationQualityPaper);
 
-  return [publishedCssciPaper, ...saved];
+  managedPapers.forEach(managed => {
+    const match = migrated.findIndex(paper =>
+      paper.id === managed.id || paper.titleEn === managed.titleEn || paper.titleZh === managed.titleZh
+    );
+    if (match >= 0) migrated[match] = managed;
+    else migrated.push(managed);
+  });
+
+  const stageRank = paper => {
+    const status = paper.status.toLowerCase();
+    if (status.includes("r&r") || status.includes("revise")) return 0;
+    if (status.includes("second") || status.includes("二审")) return 1;
+    if (status.includes("first") || status.includes("一审")) return 2;
+    if (paper.id === publishedCssciPaper.id) return 3;
+    return 4;
+  };
+  return migrated.map((paper, index) => ({ paper, index }))
+    .sort((a, b) => stageRank(a.paper) - stageRank(b.paper) || a.index - b.index)
+    .map(item => item.paper);
 }
 
 function loadPapers() {
