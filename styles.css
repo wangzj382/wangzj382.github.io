@@ -116,6 +116,9 @@ section:not(.hero) { max-width: var(--max); margin: 0 auto; padding: 102px max(2
 .cv-row time { color: var(--red); font-weight: 900; }
 .cv-row h3 { margin: 0 0 7px; color: var(--deep-blue); font-family: Inter, Arial, "Noto Sans SC", sans-serif; font-size: 1.28rem; font-weight: 600; }
 .cv-row p { margin: 0; color: var(--muted); }
+.cv-row .cv-note { margin-bottom: 14px; }
+.cv-list { display: grid; gap: 10px; margin: 14px 0 0; padding-left: 20px; color: var(--muted); }
+.cv-list li { padding-left: 4px; line-height: 1.65; }
 
 .contact { max-width: none !important; display: grid; grid-template-columns: 1fr 1fr; gap: clamp(60px, 10vw, 150px); padding-left: max(6vw, calc((100vw - var(--max))/2)) !important; padding-right: max(6vw, calc((100vw - var(--max))/2)) !important; border-top: 1px solid var(--line); background: #efede8; color: var(--ink); }
 .contact .eyebrow { color: var(--blue); }
@@ -175,4 +178,3 @@ footer p { margin: 0; }
   *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
   .reveal { opacity: 1; transform: none; }
 }
-
