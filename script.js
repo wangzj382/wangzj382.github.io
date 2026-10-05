@@ -52,16 +52,47 @@ function initialPapers() {
 
 const defaults = initialPapers();
 
+const publishedCssciPaper = {
+  id: "paper-cssci-risk-contagion",
+  status: "CSSCI",
+  year: "2026",
+  titleZh: "同群企业风险传染对货币政策风险承担渠道的影响研究",
+  titleEn: "The Influence of Risk Contagion of the Same Group Enterprises on the Risk-Taking Channels of Monetary Policy",
+  descriptionZh: "《经济与管理》· CSSCI · 2026年第40卷第3期，第68–76页",
+  descriptionEn: "Economy and Management · CSSCI · Vol. 40, No. 3, pp. 68–76"
+};
+
+function migratePapers(saved) {
+  const exactMatch = saved.findIndex(paper =>
+    paper.id === publishedCssciPaper.id ||
+    paper.titleEn === publishedCssciPaper.titleEn ||
+    paper.titleZh === publishedCssciPaper.titleZh
+  );
+  if (exactMatch >= 0) {
+    return saved.map((paper, index) => index === exactMatch ? publishedCssciPaper : paper);
+  }
+
+  const placeholder = saved.findIndex(paper =>
+    paper.titleEn === "Chinese C-journal manuscript" || paper.titleZh === "中文C刊稿件"
+  );
+  if (placeholder >= 0) {
+    return saved.map((paper, index) => index === placeholder ? publishedCssciPaper : paper);
+  }
+
+  return [publishedCssciPaper, ...saved];
+}
+
 function loadPapers() {
   try {
     const saved = JSON.parse(localStorage.getItem(paperStorageKey));
-    return Array.isArray(saved) ? saved : defaults;
+    return migratePapers(Array.isArray(saved) ? saved : defaults);
   } catch {
-    return defaults;
+    return migratePapers(defaults);
   }
 }
 
 let papers = loadPapers();
+localStorage.setItem(paperStorageKey, JSON.stringify(papers));
 
 function savePapers() {
   localStorage.setItem(paperStorageKey, JSON.stringify(papers));
