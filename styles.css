@@ -111,6 +111,7 @@ section:not(.hero) { max-width: var(--max); margin: 0 auto; padding: 102px max(2
 
 .cv { border-top: 1px solid var(--line); }
 .cv-timeline { margin-left: 140px; border-top: 1px solid var(--ink); }
+.cv-group-label { padding: 34px 0 10px; color: var(--blue); font-size: .78rem; font-weight: 800; text-transform: uppercase; }
 .cv-row { display: grid; grid-template-columns: 160px 1fr; gap: 28px; padding: 30px 0; border-bottom: 1px solid var(--line); }
 .cv-row time { color: var(--red); font-weight: 900; }
 .cv-row h3 { margin: 0 0 7px; color: var(--deep-blue); font-family: Inter, Arial, "Noto Sans SC", sans-serif; font-size: 1.28rem; font-weight: 600; }
