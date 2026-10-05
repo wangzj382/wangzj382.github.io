@@ -9,7 +9,7 @@ function setLanguage(nextLanguage) {
   });
   languageToggle.textContent = language === "en" ? "中文" : "EN";
   languageToggle.setAttribute("aria-label", language === "en" ? "切换为中文" : "Switch to English");
-  document.title = language === "en" ? "Wang · Finance Research" : "Wang · 金融与经济研究";
+  document.title = language === "en" ? "Zhengjie Wang · Finance Research" : "Zhengjie Wang · 金融与经济研究";
 }
 
 languageToggle.addEventListener("click", () => setLanguage(language === "en" ? "zh" : "en"));
@@ -82,7 +82,17 @@ const innovationQualityPaper = {
   descriptionEn: "Nankai Business Review · CSSCI · first-round review"
 };
 
-const managedPapers = [bankFintechPaper, innovationQualityPaper, publishedCssciPaper];
+const publishedFzuPaper = {
+  id: "paper-fzu-structural-monetary-policy",
+  status: "PUBLISHED",
+  year: "2025",
+  titleZh: "结构性货币政策对小微企业的风险缓解效应研究",
+  titleEn: "The Risk-Mitigation Effects of Structural Monetary Policy on Small and Micro Enterprises",
+  descriptionZh: "《福州大学学报（哲学社会科学版）》· 2025年第4期（总第188期）· 合著（第四作者）",
+  descriptionEn: "Journal of Fuzhou University (Philosophy and Social Sciences) · No. 4, 2025 · co-author (fourth author)"
+};
+
+const managedPapers = [bankFintechPaper, innovationQualityPaper, publishedCssciPaper, publishedFzuPaper];
 
 function migratePapers(saved) {
   let migrated = saved.filter(paper =>
@@ -107,7 +117,7 @@ function migratePapers(saved) {
     if (status.includes("r&r") || status.includes("revise")) return 0;
     if (status.includes("second") || status.includes("二审")) return 1;
     if (status.includes("first") || status.includes("一审")) return 2;
-    if (paper.id === publishedCssciPaper.id) return 3;
+    if (paper.id === publishedCssciPaper.id || paper.id === publishedFzuPaper.id) return 3;
     return 4;
   };
   return migrated.map((paper, index) => ({ paper, index }))
@@ -253,4 +263,3 @@ paperForm.addEventListener("submit", event => {
 
 renderPapers();
 setLanguage("en");
-
