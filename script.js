@@ -64,12 +64,12 @@ const publishedCssciPaper = {
 
 const bankFintechPaper = {
   id: "paper-bank-fintech-transmission",
-  status: "SECOND REVIEW",
+  status: "PUBLISHED",
   year: "2026",
-  titleZh: "银行金融科技与货币政策精准信贷传导",
+  titleZh: "银行金融科技与货币政策信贷精准传导",
   titleEn: "Bank Fintech and the Precision of Monetary Policy Credit Transmission",
-  descriptionZh: "《山西财经大学学报》· CSSCI · 二审",
-  descriptionEn: "Journal of Shanxi University of Finance and Economics · CSSCI · second-round review"
+  descriptionZh: "林朝颖，王政杰，傅传锐. 银行金融科技与货币政策信贷精准传导[J]. 山西财经大学学报，2026，48（09）：51–62.",
+  descriptionEn: "Lin, Chaoying; Wang, Zhengjie; Fu, Chuanrui · Journal of Shanxi University of Finance and Economics · 2026, 48(9): 51–62 · CSSCI"
 };
 
 const innovationQualityPaper = {
@@ -117,7 +117,7 @@ function migratePapers(saved) {
     if (status.includes("r&r") || status.includes("revise")) return 0;
     if (status.includes("second") || status.includes("二审")) return 1;
     if (status.includes("first") || status.includes("一审")) return 2;
-    if (paper.id === publishedCssciPaper.id || paper.id === publishedFzuPaper.id) return 3;
+    if (status.includes("published") || paper.id === publishedCssciPaper.id || paper.id === publishedFzuPaper.id) return 3;
     return 4;
   };
   return migrated.map((paper, index) => ({ paper, index }))
@@ -144,7 +144,7 @@ function savePapers() {
 function statusClass(status) {
   const normalized = status.toLowerCase();
   if (normalized.includes("r&r") || normalized.includes("revise")) return "rr";
-  if (normalized.includes("revised") || normalized.includes("修回") || normalized.includes("接收")) return "revised";
+  if (normalized.includes("published") || normalized.includes("revised") || normalized.includes("修回") || normalized.includes("接收")) return "revised";
   return "review";
 }
 
