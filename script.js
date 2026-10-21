@@ -42,7 +42,11 @@ const syncNotice = document.createElement("p");
 syncNotice.setAttribute("role", "status");
 syncNotice.setAttribute("aria-live", "polite");
 paperList.before(syncNotice);
-function notice(message) { syncNotice.textContent = message; }
+const formNotice = document.createElement("p");
+formNotice.setAttribute("role", "status");
+formNotice.setAttribute("aria-live", "polite");
+paperForm.append(formNotice);
+function notice(message) { syncNotice.textContent = message; formNotice.textContent = message; }
 function readPapers(root) {
   return [...root.querySelectorAll(".paper-row")].map((row, index) => ({
     id: row.dataset.paperId || `paper-${index + 1}`,
