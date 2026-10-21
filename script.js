@@ -32,115 +32,179 @@ document.querySelectorAll(".reveal").forEach(element => observer.observe(element
 const paperList = document.getElementById("paperList");
 const paperDialog = document.getElementById("paperDialog");
 const paperForm = document.getElementById("paperForm");
-const paperStorageKey = "wang-academic-profile-papers-v1";
 
-function initialPapers() {
-  return [...paperList.querySelectorAll(".paper-row")].map((row, index) => {
-    const title = row.querySelector("h3");
-    const description = row.querySelector("p");
-    return {
-      id: `paper-${index + 1}`,
-      status: row.querySelector(".status").textContent.trim(),
-      year: row.querySelector(".year").textContent.trim(),
-      titleEn: title.dataset.en,
-      titleZh: title.dataset.zh,
-      descriptionEn: description.dataset.en,
-      descriptionZh: description.dataset.zh
-    };
+const repositoryApi = "https://api.github.com/repos/wangzj382/wangzj382.github.io/contents/index.html";
+let sourceHtml = "";
+let sourceSha = "";
+let publishing = false;
+let githubToken = "";
+const syncNotice = document.createElement("p");
+syncNotice.setAttribute("role", "status");
+syncNotice.setAttribute("aria-live", "polite");
+paperList.before(syncNotice);
+function notice(message) { syncNotice.textContent = message; }
+function readPapers(root) {
+  return [...root.querySelectorAll(".paper-row")].map((row, index) => ({
+    id: row.dataset.paperId || `paper-${index + 1}`,
+    status: row.querySelector(".status").textContent.trim(),
+    year: row.querySelector(".year").textContent.trim(),
+    titleEn: row.querySelector("h3").dataset.en,
+    titleZh: row.querySelector("h3").dataset.zh,
+    descriptionEn: row.querySelector("p").dataset.en,
+    descriptionZh: row.querySelector("p").dataset.zh
+  }));
+}
+let papers = readPapers(paperList);
+function decodeContent(content) {
+  return new TextDecoder().decode(Uint8Array.from(atob(content.replace(/\s/g, "")), c => c.charCodeAt(0)));
+}
+function encodeContent(content) {
+  const bytes = new TextEncoder().encode(content);
+  let binary = "";
+  bytes.forEach(byte => { binary += String.fromCharCode(byte); });
+  return btoa(binary);
+}
+async function readSource() {
+  const response = await fetch(repositoryApi + "?ref=main&t=" + Date.now(), {
+    cache: "no-store", headers: { Accept: "application/vnd.github+json" }
+  });
+  if (!response.ok) throw new Error("无法读取 GitHub 最新版本，请稍后刷新重试。");
+  const data = await response.json();
+  return { sha: data.sha, html: decodeContent(data.content) };
+}
+function requestToken() {
+  if (githubToken) return Promise.resolve(githubToken);
+  return new Promise(resolve => {
+    const dialog = document.createElement("dialog");
+    dialog.className = "paper-dialog";
+    const form = document.createElement("form");
+    const heading = document.createElement("h3");
+    heading.textContent = "授权发布到 GitHub";
+    const info = document.createElement("p");
+    info.textContent = "创建 Fine-grained Token：仅选择 wangzj382.github.io 仓库，Contents 权限设为 Read and write。Token 仅保留在当前页面内存中，关闭或刷新页面后清除。请勿在聊天中发送 Token。";
+    const link = document.createElement("a");
+    link.href = "https://github.com/settings/personal-access-tokens/new";
+    link.target = "_blank";
+    link.rel = "noopener noreferrer";
+    link.textContent = "打开 GitHub 创建 Token";
+    const label = document.createElement("label");
+    label.textContent = "GitHub Token";
+    const input = document.createElement("input");
+    input.type = "password";
+    input.autocomplete = "off";
+    input.required = true;
+    label.append(input);
+    const actions = document.createElement("div");
+    actions.className = "dialog-actions";
+    const cancel = document.createElement("button");
+    cancel.type = "button";
+    cancel.textContent = "取消";
+    const submit = document.createElement("button");
+    submit.type = "submit";
+    submit.textContent = "授权并发布";
+    actions.append(cancel, submit);
+    form.append(heading, info, link, label, actions);
+    dialog.append(form);
+    document.body.append(dialog);
+    let settled = false;
+    function finish(value) {
+      if (settled) return;
+      settled = true;
+      input.value = "";
+      dialog.close();
+      dialog.remove();
+      resolve(value);
+    }
+    cancel.addEventListener("click", () => finish(null));
+    dialog.addEventListener("cancel", event => { event.preventDefault(); finish(null); });
+    form.addEventListener("submit", event => {
+      event.preventDefault();
+      githubToken = input.value.trim();
+      finish(githubToken || null);
+    });
+    dialog.showModal();
+    input.focus();
   });
 }
-
-const defaults = initialPapers();
-
-const publishedCssciPaper = {
-  id: "paper-cssci-risk-contagion",
-  status: "PUBLISHED",
-  year: "2026",
-  titleZh: "同群企业风险传染对货币政策风险承担渠道的影响研究",
-  titleEn: "The Influence of Risk Contagion of the Same Group Enterprises on the Risk-Taking Channels of Monetary Policy",
-  descriptionZh: "《经济与管理》· CSSCI · 2026年第40卷第3期，第68–76页",
-  descriptionEn: "Economy and Management · CSSCI · Vol. 40, No. 3, pp. 68–76"
-};
-
-const bankFintechPaper = {
-  id: "paper-bank-fintech-transmission",
-  status: "PUBLISHED",
-  year: "2026",
-  titleZh: "银行金融科技与货币政策信贷精准传导",
-  titleEn: "Bank Fintech and the Precision of Monetary Policy Credit Transmission",
-  descriptionZh: "林朝颖，王政杰，傅传锐. 银行金融科技与货币政策信贷精准传导[J]. 山西财经大学学报，2026，48（09）：51–62.",
-  descriptionEn: "Lin, Chaoying; Wang, Zhengjie; Fu, Chuanrui · Journal of Shanxi University of Finance and Economics · 2026, 48(9): 51–62 · CSSCI"
-};
-
-const innovationQualityPaper = {
-  id: "paper-llm-innovation-quality",
-  status: "FIRST REVIEW",
-  year: "2026",
-  titleZh: "基于大语言模型的企业创新质量测度及其绩效预测价值研究",
-  titleEn: "The Measurement of Enterprise Innovation Quality Based on Large Language Models and Its Predictive Value for Performance",
-  descriptionZh: "《南开管理评论》· CSSCI · 一审",
-  descriptionEn: "Nankai Business Review · CSSCI · first-round review"
-};
-
-const publishedFzuPaper = {
-  id: "paper-fzu-structural-monetary-policy",
-  status: "PUBLISHED",
-  year: "2025",
-  titleZh: "结构性货币政策对小微企业的风险缓解效应研究",
-  titleEn: "The Risk-Mitigation Effects of Structural Monetary Policy on Small and Micro Enterprises",
-  descriptionZh: "《福州大学学报（哲学社会科学版）》· 2025年第4期（总第188期）· 合著（第四作者）",
-  descriptionEn: "Journal of Fuzhou University (Philosophy and Social Sciences) · No. 4, 2025 · co-author (fourth author)"
-};
-
-const managedPapers = [bankFintechPaper, innovationQualityPaper, publishedCssciPaper, publishedFzuPaper];
-
-function migratePapers(saved) {
-  let migrated = saved.filter(paper =>
-    paper.titleEn !== "Chinese C-journal manuscript" && paper.titleZh !== "中文C刊稿件"
-  );
-
-  const firstTierPlaceholder = migrated.findIndex(paper =>
-    paper.titleEn === "Chinese first-tier journal manuscript" || paper.titleZh === "中文一类期刊稿件"
-  );
-  if (firstTierPlaceholder >= 0) migrated.splice(firstTierPlaceholder, 1, innovationQualityPaper);
-
-  managedPapers.forEach(managed => {
-    const match = migrated.findIndex(paper =>
-      paper.id === managed.id || paper.titleEn === managed.titleEn || paper.titleZh === managed.titleZh
-    );
-    if (match >= 0) migrated[match] = managed;
-    else migrated.push(managed);
+function publishedHtml(nextPapers) {
+  const doc = new DOMParser().parseFromString(sourceHtml, "text/html");
+  const list = doc.getElementById("paperList");
+  list.replaceChildren();
+  nextPapers.forEach(paper => {
+    const row = doc.createElement("article");
+    row.className = "paper-row";
+    row.dataset.paperId = paper.id;
+    row.setAttribute("role", "listitem");
+    const status = doc.createElement("span");
+    status.className = "status " + statusClass(paper.status);
+    status.textContent = paper.status;
+    const copy = doc.createElement("div");
+    for (const [tag, en, zh] of [["h3", paper.titleEn, paper.titleZh], ["p", paper.descriptionEn, paper.descriptionZh]]) {
+      const element = doc.createElement(tag);
+      element.dataset.en = en;
+      element.dataset.zh = zh;
+      element.textContent = en;
+      copy.append(element);
+    }
+    const year = doc.createElement("span");
+    year.className = "year";
+    year.textContent = paper.year;
+    row.append(status, copy, year);
+    list.append(row);
   });
-
-  const stageRank = paper => {
-    const status = paper.status.toLowerCase();
-    if (status.includes("r&r") || status.includes("revise")) return 0;
-    if (status.includes("second") || status.includes("二审")) return 1;
-    if (status.includes("first") || status.includes("一审")) return 2;
-    if (status.includes("published") || paper.id === publishedCssciPaper.id || paper.id === publishedFzuPaper.id) return 3;
-    return 4;
-  };
-  return migrated.map((paper, index) => ({ paper, index }))
-    .sort((a, b) => stageRank(a.paper) - stageRank(b.paper) || a.index - b.index)
-    .map(item => item.paper);
+  // Replace only the paper list; preserve the rest of the source byte for byte.
+  const start = sourceHtml.indexOf('<div class="paper-list');
+  const end = sourceHtml.indexOf('\n    </section>', start);
+  if (start < 0 || end < 0) throw new Error("页面结构已变化，请刷新后重试。");
+  return sourceHtml.slice(0, start) + list.outerHTML + sourceHtml.slice(end);
 }
-
-function loadPapers() {
+async function savePapers(nextPapers) {
+  if (!sourceSha || publishing) return false;
+  publishing = true;
   try {
-    const saved = JSON.parse(localStorage.getItem(paperStorageKey));
-    return migratePapers(Array.isArray(saved) ? saved : defaults);
-  } catch {
-    return migratePapers(defaults);
-  }
+    const token = await requestToken();
+    if (!token) { notice("已取消发布，线上内容未更改。"); return false; }
+    notice("正在保存到 GitHub… / Publishing…");
+    const latest = await readSource();
+    if (latest.sha !== sourceSha) throw new Error("网站已被其他页面更新。请先复制未保存的修改，再刷新页面重新编辑，避免覆盖新版本。");
+    const html = publishedHtml(nextPapers);
+    const response = await fetch(repositoryApi, {
+      method: "PUT",
+      headers: { Accept: "application/vnd.github+json", Authorization: "Bearer " + token, "Content-Type": "application/json" },
+      body: JSON.stringify({ message: "Update papers from homepage editor", branch: "main", sha: sourceSha, content: encodeContent(html) })
+    });
+    if (!response.ok) {
+      if (response.status === 401 || response.status === 403) githubToken = "";
+      throw new Error(response.status === 409 || response.status === 422
+        ? "版本冲突，请保留修改并刷新页面后重试。"
+        : "GitHub 保存失败（" + response.status + "）。请检查 Token 的仓库选择及 Contents 写入权限，然后重试。");
+    }
+    const result = await response.json();
+    sourceSha = result.content.sha;
+    sourceHtml = html;
+    papers = nextPapers;
+    renderPapers();
+    notice("已保存到 GitHub。网站正在自动部署，其他访客将在部署完成后看到更新（通常约 1–2 分钟）。");
+    return true;
+  } catch (error) {
+    notice(error.message || "网络连接失败，请重试。");
+    return false;
+  } finally { publishing = false; }
 }
-
-let papers = loadPapers();
-localStorage.setItem(paperStorageKey, JSON.stringify(papers));
-
-function savePapers() {
-  localStorage.setItem(paperStorageKey, JSON.stringify(papers));
+async function initializePublishing() {
+  notice("正在读取最新论文信息… / Loading latest papers…");
+  try {
+    const source = await readSource();
+    const doc = new DOMParser().parseFromString(source.html, "text/html");
+    const list = doc.getElementById("paperList");
+    if (!list) throw new Error("未找到论文列表，暂时无法编辑。");
+    papers = readPapers(list);
+    sourceHtml = source.html;
+    sourceSha = source.sha;
+    renderPapers();
+    notice("修改后点击“保存并发布”，即可更新公开主页。发布需要 GitHub 仓库写入授权。");
+  } catch (error) { notice(error.message); }
 }
-
 function statusClass(status) {
   const normalized = status.toLowerCase();
   if (normalized.includes("r&r") || normalized.includes("revise")) return "rr";
@@ -200,6 +264,7 @@ function setField(id, value) {
 }
 
 function openPaperDialog(paper = null) {
+  if (!sourceSha || publishing) { notice("请等待最新内容加载或当前发布完成。"); return; }
   setField("paperId", paper?.id);
   setField("paperStatus", paper?.status || "");
   setField("paperYear", paper?.year || new Date().getFullYear());
@@ -227,7 +292,8 @@ paperDialog.addEventListener("click", event => {
   if (event.target === paperDialog) closePaperDialog();
 });
 
-paperList.addEventListener("click", event => {
+paperList.addEventListener("click", async event => {
+  if (!sourceSha || publishing) return;
   const editButton = event.target.closest("[data-edit-paper]");
   if (editButton) {
     openPaperDialog(papers.find(paper => paper.id === editButton.dataset.editPaper));
@@ -238,12 +304,10 @@ paperList.addEventListener("click", event => {
   const paper = papers.find(item => item.id === deleteButton.dataset.deletePaper);
   const prompt = language === "zh" ? `确定删除“${paper.titleZh}”吗？` : `Delete “${paper.titleEn}”?`;
   if (!window.confirm(prompt)) return;
-  papers = papers.filter(item => item.id !== paper.id);
-  savePapers();
-  renderPapers();
+  await savePapers(papers.filter(item => item.id !== paper.id));
 });
 
-paperForm.addEventListener("submit", event => {
+paperForm.addEventListener("submit", async event => {
   event.preventDefault();
   const id = document.getElementById("paperId").value;
   const paper = {
@@ -255,11 +319,12 @@ paperForm.addEventListener("submit", event => {
     descriptionZh: document.getElementById("paperDescriptionZh").value.trim(),
     descriptionEn: document.getElementById("paperDescriptionEn").value.trim()
   };
-  papers = id ? papers.map(item => item.id === id ? paper : item) : [...papers, paper];
-  savePapers();
-  renderPapers();
-  closePaperDialog();
+  const nextPapers = id ? papers.map(item => item.id === id ? paper : item) : [...papers, paper];
+  const saved = await savePapers(nextPapers);
+  if (saved) closePaperDialog();
 });
 
 renderPapers();
 setLanguage("en");
+
+initializePublishing();
